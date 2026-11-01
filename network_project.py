@@ -13,6 +13,10 @@ import numpy as np
 from datetime import datetime
 import queue
 import altair as alt
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -164,6 +168,7 @@ enable_alerts = st.sidebar.checkbox("Enable Alerts", value=True)
 
 if enable_alerts:
     email_alerts = st.sidebar.checkbox("Enable Email Alerts", value=False)
+
     if email_alerts:
         receiver_email = st.sidebar.text_input(
             "Notification Email",
@@ -174,17 +179,24 @@ if enable_alerts:
         # Test email button
         if st.sidebar.button("Test Email"):
             try:
+                sender_email = os.getenv("EMAIL_HOST_USER")
+                sender_password = os.getenv("EMAIL_HOST_PASSWORD")
+
+                if not sender_email or not sender_password:
+                    raise ValueError("Email credentials are not configured.")
+
                 send_email(
                     "Network Monitor Test",
                     "This is a test email from the Network Anomaly Detection System.",
-                    "sample@gmail.com", #give a mail address from where you want to send the alerts from(hardcoded)
-                    "your_mail_key", #your mail key
+                    sender_email,
+                    sender_password,
                     receiver_email
                 )
+
                 st.sidebar.success("Test email sent successfully!")
+
             except Exception as e:
                 st.sidebar.error(f"Failed to send test email: {str(e)}")
-
 # Interface selection
 interface = st.sidebar.text_input(
     "Network Interface",
@@ -329,13 +341,22 @@ def handle_alerts(df):
 
             if email_alerts and receiver_email and not st.session_state.email_sent:
                 try:
+                    sender_email = os.getenv("EMAIL_HOST_USER")
+                    sender_password = os.getenv("EMAIL_HOST_PASSWORD")
+
+                    if not sender_email or not sender_password:
+                        raise ValueError("Email credentials are not configured.")
+
                     send_email(
                         "NETWORK ALERT: Anomaly Detected",
                         alert_message,
-                        "***REMOVED***",
-                        "***REMOVED***",
+                        sender_email,
+                        sender_password,
                         receiver_email
                     )
+
+                    st.session_state.email_sent = True
+
                 except Exception as e:
                     logger.error(f"Failed to send email alert: {e}")
 
